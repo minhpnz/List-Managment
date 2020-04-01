@@ -1,0 +1,20 @@
+.ToItem{
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 300;
+    font-size: 24px;
+    color: #4d4d4d;
+    padding: 10px 5px;
+    border-bottom: 1px solid #EEE;
+    display: flex;
+}
+.ToItem:last-child{
+    border-bottom: none;
+    
+}
+.ToItem >p{
+    margin: 0 0 0 10px;
+}
+.ToItem-complete >p{
+    text-decoration: line-through;
+    opacity: .3;
+}
