@@ -1,93 +1,210 @@
-import React ,{Component} from 'react';
+import React, {Component} from 'react';
+import TaskForm from './components/TaskForm'
+import Control from './components/Control'
+import TaskList from './components/TaskList'
 import './App.css';
-import ToItem from './components/ToItem';
-import tick from './img/tick.svg'
 
-class App extends Component{
-  constructor(){
-    super();
-    this.onItemClicked=this.onItemClicked.bind(this);
-    this.onKeyUp=this.onKeyUp.bind(this)
-    this.onChange=this.onChange.bind(this)
-    this.state=
-    {
-      newItem:'',
-      todoItem:
-    [
-    {title: 'Mua bim ',isComplete:true}
-    ,{title:'Mua bim bim',isComplete:true}
-    ,{title:'Mua bim bim bim',isComplete:true}
-    ]
+class App extends Component {
+  constructor(props){
+     super(props);
+     this.state={
+       tasks:[],
+       isDisplayForm:false,
+       taskEditing:null,
+       filter:{
+         name:'',
+         status:-1
+       },
+         by:'',
+         value:1
+       
+     }
+  }
+  
+  componentWillMount(){
+    if(localStorage&&localStorage.getItem('tasks')){
+      var tasks=JSON.parse(localStorage.getItem('tasks'));
+      // var tasks=[{
+      //   id:'123',
+      //   name:'ngu',
+      //   status:true
+      // }]
+      this.setState({
+        tasks:tasks
+      })
+
     }
   }
-
-  onItemClicked(item){
-    console.log("Item CLiked",item);
-    return (event)=>{
-      const isComplete=item.isComplete;
-      const {todoItem}=this.state;
-      const index=this.state.todoItem.indexOf(item);
-      this.setState({
-        todoItem:[
-          ...todoItem.slice(0,index),
-          {
-            ...item,isComplete:!isComplete
-          },
-          ...todoItem.slice(index+1)
-        ]
-      })
-    };
-  }
-
-  onKeyUp(event){
-  
-    if(event.keyCode===13)
-      {
-    let text=event.target.value;
-      if(!text || text===''){ return;}
-    text=text.trim();
-      if(!text) {return;}
+  DisplayForm = ()=>{
     this.setState({
-      newItem:'',
-      todoItem:[
-        {title:text,isComplete:false},
-        ...this.state.todoItem
-      ]
-    })}
-
+      isDisplayForm:!this.state.isDisplayForm
+      
+    })
+    
   }
-
-  onChange(event){
+  onToggleForm=()=>{
     this.setState({
-      newItem:event.target.value
+      isDisplayForm:!this.state.isDisplayForm,
+      taskEditing:null
     })
   }
-
-  render(){
-    const {todoItem,newItem}=this.state;
-    return (
-    <div className="App">
-        <h1 className="todoapp">Todo List</h1>
-       <div className="Header">
-          <img src={tick} width={32} height={32} ></img>
-          <input type="text"
-          value={newItem}
-          onChange={this.onChange}
-          placeholder="Add a new toDo"
-          onKeyUp={this.onKeyUp}></input>
-       </div>
-        {
-          todoItem.length>0&&todoItem.map((item,index)=>
-          <ToItem 
-            key={index} 
-            item={item}
-            onClick={this.onItemClicked(item)}
-            />)
-        }
-        {todoItem.length===0 && 'Nothing here'}
+  onSort=(name,value)=>{
+    this.setState({
+      
+        by:name,value:value
+      
+    });
+   
+  }
+  s4(){
+    return Math.floor((1+Math.random())*0x10000).toString(16).substring(1);
+  }
+  generateID(){
+    return this.s4()+this.s4()+ '-' +this.s4()+ '-' +this.s4()+this.s4()+ '-' +this.s4();
+  }
+  onCloseform=()=>{
+    this.setState({
+      isDisplayForm:!this.state.isDisplayForm
+    })
     
-    </div>
-  );}
-}
+  }
+  OnChangeStatus=(id)=>{
+    var index=this.findindex(id);
+    var {tasks}=this.state;
+    tasks[index].status=! tasks[index].status;
+    this.setState({
+      tasks:tasks
+    })
+    localStorage.setItem('tasks',JSON.stringify(tasks))
+    
+  }
+  deleteItem=(id)=>{
+    var index=this.findindex(id);
+    var {tasks}=this.state;
+    tasks.splice(index,1)
+    this.setState({
+      tasks:tasks
+    })
+    localStorage.setItem('tasks',JSON.stringify(tasks))
+  }
+  findindex=(id)=>{
+    var result;
+    var {tasks}=this.state;
+    tasks.forEach((task,index)=>{
+      if(task.id===id){
+        result=index;
+      }
+    })
+    return result;
+  }
+  cancleForm=()=>{
+    this.setState({
+      isDisplayForm:!this.state.isDisplayForm
+    })
+  }
+  onModify=(id)=>{
+    var {tasks}=this.state;
+    var index=this.findindex(id);
+    var taskEditing=tasks[index];
+
+    this.setState({
+      taskEditing:taskEditing
+    })
+    this.DisplayForm()
+     return 2;
+  }
+  onSubmit=(data)=>{
+    var {tasks}=this.state;
+    if(data.id===''){
+      data.id=this.generateID();
+      tasks.push(data)
+    }
+    else{
+      var index=this.findindex(data.id);
+      tasks[index]=data;
+    }
+    this.setState({
+      tasks:tasks,
+      taskEditing:null  
+    });
+    localStorage.setItem('tasks',JSON.stringify(tasks))
+  }
+  onFilter=(filterName,filterStatus)=>{
+    filterStatus=parseInt(filterStatus,10);
+    this.setState({
+      filter:{
+        name:filterName.toLowerCase(),
+        status:filterStatus
+      }
+    })
+  }
+  render(){
+
+  var {tasks,isDisplayForm,taskEditing,filter,by,value}=this.state;
+  if(filter){
+    if(filter.name){
+      tasks=tasks.filter((task)=>{
+        return task.name.toLowerCase().indexOf(filter.name)!==-1;
+      })
+    }
+    tasks=tasks.filter((task)=>{
+      if(filter.status===-1){
+        return task;
+      }
+      else{
+        return task.status===(filter.status===1?true:false)
+      }
+    })
+  }
+  if(by==='name'){
+    tasks.sort((a,b)=>{
+      if(a.name.toLowerCase()>b.name.toLowerCase()) return value;
+      else if(a.name.toLowerCase()<b.name.toLowerCase())return -value;
+      else return 0;
+    })
+
+  }
+  else{
+    
+      tasks.sort((a,b)=>
+      {
+        if(a.status>b.status) return value;
+        else if(a.status<b.status)return -value;
+        else return 0;
+      }
+      )
+  }
+  
+
+
+  var elementTaskForm=isDisplayForm===true?<TaskForm tasks={taskEditing} onModify={this.onModify} cancleForm={this.cancleForm} onCloseform={this.onCloseform} onSubmit={this.onSubmit}/>:'';
+  return (
+    <div className="App">
+        <div className="container">
+          <div className="text-center">
+            <h1>Quản lý công việc</h1><hr/>
+          </div>
+          <div className="row">
+          
+            <div className="col-4">
+              {elementTaskForm}
+            </div>
+            <div className={isDisplayForm===true?'col-8':'col-12'}>
+            <button type="submit" className="btn btn-primary btn-add-job"  onClick={this.onToggleForm}>
+                        <span className="fa fa-plus mr-5"/>Thêm công việc    
+                      </button>
+                    
+          
+            <Control onSort={this.onSort} by={by} value={value}/>
+              
+             <TaskList tasks={tasks} onModify={this.onModify} OnChangeStatus={this.OnChangeStatus} deleteItem={this.deleteItem} onFilter={this.onFilter}/>
+            
+            </div>
+            </div>
+          </div>
+        </div>
+   
+  );
+}}
 
 export default App;
